@@ -19,12 +19,16 @@ ap.add_argument('-d', '--dir', required=False, help='Directory of .mat file(s)')
 ap.add_argument('-f', '--file', required=False, help='Name of .mat file')
 ap.add_argument('-s', '--sample_rate_variable', required=False, default='fs', help='Name of sample rate variable in .mat file')
 ap.add_argument('-a', '--audio_variable', required=False, default='y', help='Name of audio variable in .mat file')
+ap.add_argument('-t', '--datatype', required=False, default='int16', help='Datatype of output audio')
+ap.add_argument('-m', '--max_volume', required=False, default=100, help='Maximum volume as a percentage of the output dtype range')
 args = ap.parse_args()
 
 dir = args.dir
 file = args.file
 sample_rate_var = args.sample_rate_variable
 audio_var = args.audio_variable
+dtype = args.datatype
+max_volume = args.max_volume
 
 if not ((dir is None) ^ (file is None)):
     logging.error('Please provide either a directory or a file name')
@@ -37,6 +41,8 @@ if dir is not None:
 elif dir is not None:
     mat_files = [file]
 
+dtype = np.dtype(dtype)
+
 def convert_mat_to_wav(mat_file):
     logging.info(f'Converting {mat_file} to .wav')
     mat = sio.loadmat(mat_file)
@@ -45,7 +51,8 @@ def convert_mat_to_wav(mat_file):
     if isinstance(fs, np.ndarray):
         fs = fs.item()
     wav_file = mat_file.replace('.mat', '.wav')
-    sio.wavfile.write(wav_file, fs, audio)
+    audio = (audio / np.abs(audio).max()) * np.iinfo(dtype).max * max_volume/100.
+    sio.wavfile.write(wav_file, fs, audio.astype(dtype))
 
 for mat_file in mat_files:
     convert_mat_to_wav(mat_file)
