@@ -1,0 +1,3 @@
+[submodule "lib/nptlrig2"]
+	path = lib/nptlrig2
+	url = git@github.com:braingate-team/nptlrig2.git
