@@ -186,7 +186,6 @@ dependencies:
       - jupyterlab-widgets==3.0.9
       - kiwisolver==1.4.5
       - llvmlite==0.41.1
-      # - lm-decoder==0.0.1
       - matplotlib==3.8.1
       - matplotlib-inline==0.1.6
       - mistune==3.0.2
@@ -225,7 +224,7 @@ dependencies:
       - ptyprocess==0.7.0
       - pure-eval==0.2.2
       - pyalsaaudio==0.10.0
-      # - pyaudio==0.2.14
+      - pyaudio==0.2.14
       - pydantic==2.4.2
       - pydantic-core==2.10.1
       - pygments==2.16.1
@@ -265,4 +264,6 @@ dependencies:
       - webencodings==0.5.1
       - websocket-client==1.6.4
       - widgetsnbextension==4.0.9
+      - -e ../../brand/lib/python
+      - -e lib/nptlrig2/LanguageModelDecoder/runtime/server/x86
 prefix: /home/samnt/lib/miniconda3/envs/brand-speech
