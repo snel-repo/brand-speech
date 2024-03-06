@@ -1,0 +1,20 @@
+
+# python compiles
+__pycache__
+*.pyc
+
+# binaries, compiled objects, and generated code
+*.o
+*.bin
+
+# images
+*.png
+
+# pdfs
+*.pdf
+
+# mat files
+*.mat
+
+# pickle files
+*.pkl

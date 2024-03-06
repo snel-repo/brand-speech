@@ -1,12 +1,17 @@
 #!/bin/bash
 
 RED="\e[31m"
+YELLOW='\033[1;33m'
 GREEN="\e[32m"
 DEFAULT="\e[39m"
 
 error () {
     echo -e "${RED}Error: ${DEFAULT}$1"
     exit 1
+}
+
+warning () {
+    echo -e "${YELLOW}$1${DEFAULT}"
 }
 
 info () {
@@ -35,10 +40,34 @@ for dep in ${dependencies[@]}; do
     info "Successfully installed ${dep}"
 done
 
+# specifically check whether nvidia-driver-525 is installed, because it requires a reboot
+nvidia_driver_version=$(dpkg -l nvidia-driver-525 | awk '/^ii/ {print $3}')
+if [ "$nvidia_driver_version" != "525.147.05-0ubuntu0.22.04.1" ]; then
+    info "Installing nvidia-driver-525"
+    sudo apt-get -y install nvidia-driver-525=525.147.05-0ubuntu0.22.04.1
+    checkStatus $? "failed to install nvidia-driver-525"
+    info "Successfully installed nvidia-driver-525"
+    driver_installed=1
+else
+    info "nvidia-driver-525 already installed"
+    driver_installed=0
+fi
+
 # update conda environment
 info "Updating brand-speech conda env"
 conda env update --file $install_script_dir/environment.yaml --prune
 checkStatus $? "conda update failed"
 info "conda env successfully updated"
+
+# install libcudnn
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt-get update
+sudo apt-get install libcudnn8=8.8.0.*-1+cuda11.8
+rm cuda-keyring_1.1-1_all.deb
+
+if [ "$driver_installed" == "1" ]; then
+    warning "nvidia-driver-525 was installed, please reboot the computer"
+fi
 
 info "Completed installations for brand-speech module"
