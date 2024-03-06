@@ -266,4 +266,5 @@ dependencies:
       - widgetsnbextension==4.0.9
       - -e ../../brand/lib/python
       - -e lib/nptlrig2/LanguageModelDecoder/runtime/server/x86
+      - -e lib/speech_utils
 prefix: /home/samnt/lib/miniconda3/envs/brand-speech
