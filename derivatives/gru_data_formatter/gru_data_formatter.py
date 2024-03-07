@@ -91,7 +91,7 @@ else:
         f"No {NAME} derivative configuration in the current graph. Exiting.")
     sys.exit(0)
 
-# Get graph name
+# Get parameters
 bin_size = graph_params.setdefault('bin_size', 20)
 save_location = graph_params.setdefault('save_location')
 include_audio = graph_params.setdefault('include_audio', 1)
