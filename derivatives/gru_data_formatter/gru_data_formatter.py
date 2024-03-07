@@ -382,6 +382,7 @@ os.makedirs(save_filepath, exist_ok=True)
 
 # save dictionary as a .mat file to the desired path, with the desired block number
 redismat_path = os.path.join(save_filepath, 'RedisMat')
+os.makedirs(redismat_path, exist_ok=True)
 fullPath = str(Path(redismat_path, save_filename).resolve())
 
 logging.info('Attempting to save RedisMat data to: ' + fullPath)
@@ -390,6 +391,7 @@ logging.info('Succesfully formatted and saved data to: ' + fullPath)
 
 # save blockMean and blockStd
 tfdata_path = os.path.join(save_filepath, 'tfdata')
+os.makedirs(tfdata_path, exist_ok=True)
 savePath_blockMean = str(Path(tfdata_path, f'updated_means_block({block_num})').resolve())
 os.makedirs(savePath_blockMean, exist_ok=True)
 
