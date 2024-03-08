@@ -1,0 +1,6 @@
+[submodule "lib/nptlrig2"]
+	path = lib/nptlrig2
+	url = git@github.com:braingate-team/nptlrig2.git
+[submodule "lib/speech_utils"]
+	path = lib/speech_utils
+	url = git@github.com:snel-repo/speech_utils.git
