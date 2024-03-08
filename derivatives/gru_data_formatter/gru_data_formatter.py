@@ -12,6 +12,7 @@ import numpy as np
 import os
 import scipy.io
 import signal
+import matplotlib.pyplot as plt
 import sys
 
 from brand.redis import RedisLoggingHandler
@@ -399,3 +400,70 @@ logging.info('Attempting to save rdbToMat_blockMeans to: ' + savePath_blockMean)
 np.save(os.path.join(savePath_blockMean, 'rdbToMat_blockMean'), np.squeeze(blockMean, 0))
 np.save(os.path.join(savePath_blockMean, 'rdbToMat_blockStd'), np.squeeze(blockStd)+1e-8)
 logging.info('Successfully saved rdbToMat_blockMeans to: ' + savePath_blockMean)
+
+
+# normalize neural features before plotting
+binned_neural_threshold_crossings_norm = (binned_neural_threshold_crossings - np.mean(binned_neural_threshold_crossings, axis=0)) \
+    / (np.std(binned_neural_threshold_crossings, axis=0) + 1e-8)
+binned_neural_spike_band_power_norm = (binned_neural_spike_band_power - np.mean(binned_neural_spike_band_power, axis=0)) \
+    / (np.std(binned_neural_spike_band_power, axis=0) + 1e-8)
+plt.ioff()
+# threshold crossings
+plt.figure(1, figsize=(36,16))
+plt.subplot(3,1,1)
+plt.imshow(binned_neural_threshold_crossings_norm.T, aspect='auto', clim=(-2,2))
+for i in range(len(trial_start_nsp_neural_time)):
+    trial_start_ind = np.argmin(np.abs(binned_neural_nsp_timestamp - trial_start_nsp_neural_time[i]))
+    go_cue_ind      = np.argmin(np.abs(binned_neural_nsp_timestamp - go_cue_nsp_neural_time[i]))
+    trial_end_ind   = np.argmin(np.abs(binned_neural_nsp_timestamp - trial_end_nsp_neural_time[i]))
+    plt.plot([trial_start_ind, trial_start_ind], [0, n_channels], 'b')
+    plt.plot([go_cue_ind, go_cue_ind], [0, n_channels], 'g')
+    plt.plot([trial_end_ind, trial_end_ind], [0, n_channels], 'r')
+plt.xlabel('Bin #')
+plt.ylabel('Channel #')
+plt.title('Threshold Crossings (z-scored)')
+
+# spike power
+plt.subplot(3,1,2)
+plt.imshow(binned_neural_spike_band_power_norm.T, aspect='auto', clim=(-2,2))
+for i in range(len(trial_start_nsp_neural_time)):
+    trial_start_ind = np.argmin(np.abs(binned_neural_nsp_timestamp - trial_start_nsp_neural_time[i]))
+    go_cue_ind      = np.argmin(np.abs(binned_neural_nsp_timestamp - go_cue_nsp_neural_time[i]))
+    trial_end_ind   = np.argmin(np.abs(binned_neural_nsp_timestamp - trial_end_nsp_neural_time[i]))
+    plt.plot([trial_start_ind, trial_start_ind], [0, n_channels], 'b')
+    plt.plot([go_cue_ind, go_cue_ind], [0, n_channels], 'g')
+    plt.plot([trial_end_ind, trial_end_ind], [0, n_channels], 'r')
+plt.xlabel('Bin #')
+plt.ylabel('Channel #')
+plt.title('Spike band power (z-scored)')
+
+# microphone signal
+
+plt.subplot(3,1,3)
+plt.plot(microphone_data)
+ylimits = plt.ylim()
+for i in range(len(trial_start_nsp_analog_time)):
+    trial_start_ind = np.argmin(np.abs(microphone_nsp_time - trial_start_nsp_analog_time[i]))
+    go_cue_ind      = np.argmin(np.abs(microphone_nsp_time - go_cue_nsp_analog_time[i]))
+    trial_end_ind   = np.argmin(np.abs(microphone_nsp_time - trial_end_nsp_analog_time[i]))
+    plt.plot([trial_start_ind, trial_start_ind], ylimits, 'b')
+    plt.plot([go_cue_ind, go_cue_ind], ylimits, 'g')
+    plt.plot([trial_end_ind, trial_end_ind], ylimits, 'r')
+plt.xlim(0, len(microphone_data))
+plt.xlabel('Sample #')
+plt.ylabel('Amplitude')
+plt.title('Microphone signal')
+
+plt.suptitle(f'RDB_TO_MAT.PY - {session_name} - BLOCK #{block_num}')
+
+# save the plot
+# plt.tight_layout()
+plot_savetag = datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + '_(' + str(block_num) + ').png'
+plot_fullPath = str(Path(savePath, plot_savetag).resolve())
+plt.savefig(plot_fullPath, bbox_inches='tight')
+logging.info('Saved plot to: ' + plot_fullPath)
+
+# open the png
+plot_fullPath = plot_fullPath.replace('(','\(')
+plot_fullPath = plot_fullPath.replace(')','\)')
+os.system('xdg-open ' + plot_fullPath)
