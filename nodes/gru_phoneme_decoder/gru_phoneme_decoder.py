@@ -469,8 +469,8 @@ class brainToText_closedLoop(BRANDNode):
 
         # figure out and create stats save path
         if autosaveStats:
-            metadata_stream = self.r.xrange(b'metadata')
-            block_num = int(metadata_stream[0][1].get(b'block_num', b'-1').decode())
+            metadata_stream = self.r.xrange(b'block_metadata')
+            block_num = int(metadata_stream[0][1].get(b'block_number', b'-1').decode())
             autosaveStats_path = str(Path(autosaveStats_path, f'updated_means_block({block_num})'))
             logging.info(f'I will save normalization stats to: {autosaveStats_path}')
 
@@ -500,10 +500,9 @@ class brainToText_closedLoop(BRANDNode):
                 last_entry_seen = entry_id
 
                 # read and concatenate threshold crossings and spike band power
-                binnedNeuralData = np.frombuffer(entry_dict[b'threshold_crossings'], dtype=np.int16)
-                binnedNeuralData_hlfp = np.frombuffer(entry_dict[b'spike_band_power'], dtype=np.float32)
-                data_snippet = np.concatenate((binnedNeuralData, binnedNeuralData_hlfp))
-                data_snippet = data_snippet.astype(np.float32)
+                data_snippet = np.frombuffer(bytearray(entry_dict[b'samples']), dtype=np.float32)
+                # quick patch, convert summed SBP to mean SBP
+                data_snippet[len(data_snippet)//2:] /= 20.
 
 
             # get the task state [-1=INITIALIZING, 0=START, 1=GO, 3=END, 4=PAUSED]
