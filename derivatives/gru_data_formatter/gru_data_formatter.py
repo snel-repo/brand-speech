@@ -393,6 +393,8 @@ logging.info('Succesfully formatted and saved data to: ' + fullPath)
 # save blockMean and blockStd
 tfdata_path = os.path.join(save_filepath, 'tfdata')
 os.makedirs(tfdata_path, exist_ok=True)
+save_image_path = os.path.join(save_filepath, 'post_graph_images')
+os.makedirs(save_image_path, exist_ok=True)
 savePath_blockMean = str(Path(tfdata_path, f'updated_means_block({block_num})').resolve())
 os.makedirs(savePath_blockMean, exist_ok=True)
 
@@ -459,7 +461,7 @@ plt.suptitle(f'RDB_TO_MAT.PY - {session_name} - BLOCK #{block_num}')
 # save the plot
 # plt.tight_layout()
 plot_savetag = datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + '_(' + str(block_num) + ').png'
-plot_fullPath = str(Path(savePath, plot_savetag).resolve())
+plot_fullPath = str(Path(save_image_path, plot_savetag).resolve())
 plt.savefig(plot_fullPath, bbox_inches='tight')
 logging.info('Saved plot to: ' + plot_fullPath)
 
