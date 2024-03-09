@@ -4,6 +4,3 @@
 [submodule "lib/speech_utils"]
 	path = lib/speech_utils
 	url = git@github.com:snel-repo/speech_utils.git
-[submodule "lib/StyleTTS2"]
-	path = lib/StyleTTS2
-	url = git@github.com:yl4579/StyleTTS2.git
