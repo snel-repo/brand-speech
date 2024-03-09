@@ -206,4 +206,5 @@ dependencies:
     - widgetsnbextension==4.0.10
     - git+https://github.com/resemble-ai/monotonic_align.git@78b985be210a03d08bc3acc01c4df0442105366f
     - -e ../../brand/lib/python
+    - -e lib/StyleTTS2
 prefix: /home/samnt/lib/miniconda3/envs/brand-speech-tts
