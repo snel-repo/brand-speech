@@ -43,7 +43,6 @@ done
 
 # only attempt to install GPU-related items if not on an RT kernel
 kernel_info=$(uname -v)
-info $kernel_info
 if [[ $kernel_info == *"PREEMPT_RT"* ]]; then
     info "Realtime kernel detected, skipping GPU-related installations"
     driver_installed=0
