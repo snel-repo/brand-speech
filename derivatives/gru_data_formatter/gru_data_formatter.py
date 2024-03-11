@@ -440,21 +440,21 @@ plt.ylabel('Channel #')
 plt.title('Spike band power (z-scored)')
 
 # microphone signal
-
-plt.subplot(3,1,3)
-plt.plot(microphone_data)
-ylimits = plt.ylim()
-for i in range(len(trial_start_nsp_analog_time)):
-    trial_start_ind = np.argmin(np.abs(microphone_nsp_time - trial_start_nsp_analog_time[i]))
-    go_cue_ind      = np.argmin(np.abs(microphone_nsp_time - go_cue_nsp_analog_time[i]))
-    trial_end_ind   = np.argmin(np.abs(microphone_nsp_time - trial_end_nsp_analog_time[i]))
-    plt.plot([trial_start_ind, trial_start_ind], ylimits, 'b')
-    plt.plot([go_cue_ind, go_cue_ind], ylimits, 'g')
-    plt.plot([trial_end_ind, trial_end_ind], ylimits, 'r')
-plt.xlim(0, len(microphone_data))
-plt.xlabel('Sample #')
-plt.ylabel('Amplitude')
-plt.title('Microphone signal')
+if len(microphone_data) > 0:
+    plt.subplot(3,1,3)
+    plt.plot(microphone_data)
+    ylimits = plt.ylim()
+    for i in range(len(trial_start_nsp_analog_time)):
+        trial_start_ind = np.argmin(np.abs(microphone_nsp_time - trial_start_nsp_analog_time[i]))
+        go_cue_ind      = np.argmin(np.abs(microphone_nsp_time - go_cue_nsp_analog_time[i]))
+        trial_end_ind   = np.argmin(np.abs(microphone_nsp_time - trial_end_nsp_analog_time[i]))
+        plt.plot([trial_start_ind, trial_start_ind], ylimits, 'b')
+        plt.plot([go_cue_ind, go_cue_ind], ylimits, 'g')
+        plt.plot([trial_end_ind, trial_end_ind], ylimits, 'r')
+    plt.xlim(0, len(microphone_data))
+    plt.xlabel('Sample #')
+    plt.ylabel('Amplitude')
+    plt.title('Microphone signal')
 
 plt.suptitle(f'RDB_TO_MAT.PY - {session_name} - BLOCK #{block_num}')
 
@@ -465,7 +465,3 @@ plot_fullPath = str(Path(save_image_path, plot_savetag).resolve())
 plt.savefig(plot_fullPath, bbox_inches='tight')
 logging.info('Saved plot to: ' + plot_fullPath)
 
-# open the png
-plot_fullPath = plot_fullPath.replace('(','\(')
-plot_fullPath = plot_fullPath.replace(')','\)')
-os.system('xdg-open ' + plot_fullPath)
