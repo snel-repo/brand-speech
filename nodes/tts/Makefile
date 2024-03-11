@@ -1,4 +1,4 @@
-PROJECT=tts_node
+PROJECT=tts
 
 ROOT ?=../..
 include $(ROOT)/setenv.mk
