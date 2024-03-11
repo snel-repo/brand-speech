@@ -24,12 +24,16 @@ checkStatus () {
 
 install_script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
+info "Installing Git LFS"
+curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+
 # install system dependencies
 dependencies=(
 cmake=3.22.1-1ubuntu1.22.04.2
 python3-pyaudio=0.2.11-1.3ubuntu1
 portaudio19-dev=19.6.0-1.1
 espeak-ng=1.50+dfsg-10
+git-lfs=3.5.1
 )
 
 # install pkgs in $dependencies
