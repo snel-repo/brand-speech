@@ -24,11 +24,16 @@ checkStatus () {
 
 install_script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
+info "Installing Git LFS"
+curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+
 # install system dependencies
 dependencies=(
 cmake=3.22.1-1ubuntu1.22.04.2
 python3-pyaudio=0.2.11-1.3ubuntu1
 portaudio19-dev=19.6.0-1.1
+espeak-ng=1.50+dfsg-10
+git-lfs=3.5.1
 )
 
 # install pkgs in $dependencies
@@ -42,7 +47,6 @@ done
 
 # only attempt to install GPU-related items if not on an RT kernel
 kernel_info=$(uname -v)
-info $kernel_info
 if [[ $kernel_info == *"PREEMPT_RT"* ]]; then
     info "Realtime kernel detected, skipping GPU-related installations"
     driver_installed=0
@@ -79,10 +83,28 @@ else
     sudo apt-get update
     sudo apt-get install libcudnn8=8.8.0.*-1+cuda11.8
     rm cuda-keyring_1.1-1_all.deb
+fi
 
-    if [ "$driver_installed" == "1" ]; then
-        warning "nvidia-driver-525 was installed, please reboot the computer"
-    fi
+# update conda environment
+info "Updating brand-speech-tts conda env"
+conda env update --file $install_script_dir/environment_tts.yaml --prune
+checkStatus $? "conda update failed"
+info "conda env successfully updated"
+
+# download the TTS model
+info "Downloading LJ Speech TTS model"
+curwd=$(pwd)
+cd $install_script_dir/lib/StyleTTS2/StyleTTS2
+git clone https://huggingface.co/yl4579/StyleTTS2-LJSpeech
+mv StyleTTS2-LJSpeech/Models Models
+rm -rf StyleTTS2-LJSpeech
+# move our config to the model directory
+cp -rf $install_script_dir/assets/tts_config/config.yml Models/LJSpeech/config.yml
+cd $curwd
+info "Successfully downloaded LJ Speech TTS model"
+
+if [ "$driver_installed" == "1" ]; then
+    warning "nvidia-driver-525 was installed, please reboot the computer"
 fi
 
 info "Completed installations for brand-speech module"
