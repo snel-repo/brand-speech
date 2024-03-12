@@ -384,6 +384,9 @@ class brainToText_closedLoop(BRANDNode):
             logging.error(f'Could not find block means on path: {blockMean_path}')
 
 
+        # --------------------------- load channel mask --------------------------------------------
+        self.load_channel_mask()
+
         # --------------------------- initialize language model ------------------------------------
         if use_local_lm:
             # local lm
