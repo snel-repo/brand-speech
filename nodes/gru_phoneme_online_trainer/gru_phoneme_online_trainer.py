@@ -56,7 +56,16 @@ class brainToText_onlineTrainer(BRANDNode):
         gpu_number = str(self.parameters.get("gpu_number", "1"))       # GPU for tensorflow to use. -1 means that GPU is hidden and inference will happen on CPU.
         self.verbose = bool(self.parameters.get('verbose', False))
 
+        self.n_features = int(self.parameters.get("n_features", 512))
+        self.excl_chans = self.parameters.get("excl_chans", [])
+        self.ch_mask_stream = self.parameters.get("ch_mask_stream", None)
+        self.tot_ch = int(self.parameters.get("tot_ch", 256))
+        self.zero_masked_chans = bool(self.parameters.get("zero_masked_chans", True))
+
         self.config = OmegaConf.load(self.config_file_path)
+
+        # --------------------------- load channel mask --------------------------------------------
+        self.load_channel_mask()
 
         # ------------------------------ find RNN model path ---------------------------------------
         if not os.path.exists(self.init_model_dir):
@@ -286,6 +295,39 @@ class brainToText_onlineTrainer(BRANDNode):
 
             return neural_features, cue, trial_paused, trial_timed_out
 
+    def load_channel_mask(self):
+        # initialize the channel mask to include all channels
+        self.ch_mask = np.arange(self.n_features)
+        # remove channels specified in excl_chans
+        if self.excl_chans:
+            self.ch_mask = np.setdiff1d(self.ch_mask, self.excl_chans)
+
+        # get list of masked channels
+        if hasattr(self, 'ch_mask_stream'):
+            ch_mask_entry = self.r.xrevrange(self.ch_mask_stream,
+                                             '+',
+                                             '-',
+                                             count=1)
+            if ch_mask_entry:
+                stream_mask = np.frombuffer(ch_mask_entry[0][1][b'channels'],
+                                            dtype=np.uint16)
+                self.ch_mask = np.intersect1d(self.ch_mask, stream_mask)
+                for c in range(1, -(self.n_features // -self.tot_ch)):
+                    self.ch_mask = np.concatenate((self.ch_mask, self.ch_mask + self.tot_ch * c))
+                logging.info("Loaded channel mask from stream "
+                             f"{self.ch_mask_stream}")
+                if not self.zero_masked_chans:  # masked channels are dropped
+                    logging.info('Overriding n_features parameter '
+                                 f'{self.n_features} with {len(self.ch_mask)}')
+                    self.n_features = len(self.ch_mask)
+            else:
+                logging.warning(
+                    f"'ch_mask_stream' was set to {self.ch_mask_stream}, but "
+                    "there were no entries. Defaulting to using all channels")
+                self.ch_mask = np.arange(self.n_features)
+        self.ch_mask.sort()
+        logging.info(self.ch_mask)
+
 
     def run(self):
         # Load previous sessions' data
@@ -356,6 +398,13 @@ class brainToText_onlineTrainer(BRANDNode):
                 mean = np.mean(norm_features, axis=0, keepdims=True)
                 std = np.std(norm_features, axis=0, keepdims=True) + 1e-8
                 neural_data_norm = (neural_data - mean) / std
+                # zero out masked channels
+                if self.zero_masked_chans:
+                    neural_data_norm_zeroed = np.zeros_like(neural_data_norm)
+                    neural_data_norm_zeroed[:, self.ch_mask] = neural_data_norm[:, self.ch_mask]
+                    neural_data_norm = neural_data_norm_zeroed
+                else:
+                    neural_data_norm = neural_data_norm[:, self.ch_mask]
                 self.state['normalized_input_features'].append(neural_data_norm)
 
                 num_trials += 1
@@ -450,8 +499,8 @@ class brainToText_onlineTrainer(BRANDNode):
             if steps > self.config.min_train_steps and steps > self.config.max_train_steps:
                 break
 
-            if self.config.time_warp_factor > 0:
-                data = timeWarpDataElement(data, self.config.time_warp_factor)
+            # if self.config.time_warp_factor > 0:
+            #     data = timeWarpDataElement(data, self.config.time_warp_factor)
 
             try:
                 ctc_loss, reg_loss, total_loss, grad_norm = self.train_step(data['inputFeatures'],
