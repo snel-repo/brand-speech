@@ -797,6 +797,7 @@ class brainToText_closedLoop(BRANDNode):
                             # timeout if no data received for X ms
                             if len(read_result) == 0:
                                 logging.warning('Auto-punctuated text not received within 5 seconds. Skipping punctuation.')
+                                self.punctuation_last_input_entry_seen = self.get_current_redis_time_ms()
                             else:
                                 # read this data snippet
                                 for entry_id, entry_dict in read_result[0][1]:

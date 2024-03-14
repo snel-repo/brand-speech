@@ -26,6 +26,8 @@ class auto_punctuator(BRANDNode):
     
 
     def run(self):
+
+        logging.info(f'{self.NAME} is ready to go')
         
         while True:
 
