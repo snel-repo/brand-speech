@@ -69,27 +69,27 @@ else
     sudo apt-get update
     sudo apt-get install libcudnn8=8.8.0.*-1+cuda11.8
     rm cuda-keyring_1.1-1_all.deb
-
-    # update conda environment
-    info "Updating brand-speech-tts conda env"
-    conda env update --file $install_script_dir/environment_tts.yaml --prune
-    checkStatus $? "conda update failed"
-    info "conda env successfully updated"
-
-    # download the TTS model
-    info "Downloading LJ Speech TTS model"
-    curwd=$(pwd)
-    cd $install_script_dir/lib/StyleTTS2/StyleTTS2
-    if [ -d "Models" ]; then
-        rm -rf Models
-    fi
-    git clone https://huggingface.co/yl4579/StyleTTS2-LJSpeech
-    mv StyleTTS2-LJSpeech/Models Models
-    rm -rf StyleTTS2-LJSpeech
-    # move our config to the model directory
-    cp -rf $install_script_dir/assets/tts_config/config.yml Models/LJSpeech/config.yml
-    cd $curwd
-    info "Successfully downloaded LJ Speech TTS model"
 fi
+
+# update conda environment
+info "Updating brand-speech-tts conda env"
+conda env update --file $install_script_dir/environment_tts.yaml --prune
+checkStatus $? "conda update failed"
+info "conda env successfully updated"
+
+# download the TTS model
+info "Downloading LJ Speech TTS model"
+curwd=$(pwd)
+cd $install_script_dir/lib/StyleTTS2/StyleTTS2
+if [ -d "Models" ]; then
+    rm -rf Models
+fi
+git clone https://huggingface.co/yl4579/StyleTTS2-LJSpeech
+mv StyleTTS2-LJSpeech/Models Models
+rm -rf StyleTTS2-LJSpeech
+# move our config to the model directory
+cp -rf $install_script_dir/assets/tts_config/config.yml Models/LJSpeech/config.yml
+cd $curwd
+info "Successfully downloaded LJ Speech TTS model"
 
 info "Completed installations for brand-speech module"
