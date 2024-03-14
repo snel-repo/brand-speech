@@ -56,19 +56,6 @@ if [[ $kernel_info == *"PREEMPT_RT"* ]]; then
     checkStatus $? "conda update failed"
     info "conda env successfully updated"
 else
-    # specifically check whether nvidia-driver-525 is installed, because it requires a reboot
-    nvidia_driver_version=$(dpkg -l nvidia-driver-525 | awk '/^ii/ {print $3}')
-    if [ "$nvidia_driver_version" != "525.147.05-0ubuntu0.22.04.1" ]; then
-        info "Installing nvidia-driver-525"
-        sudo apt-get -y install nvidia-driver-525=525.147.05-0ubuntu0.22.04.1
-        checkStatus $? "failed to install nvidia-driver-525"
-        info "Successfully installed nvidia-driver-525"
-        warning "nvidia-driver-525 was installed, please reboot the computer, then rerun this install script"
-        exit 0
-    else
-        info "nvidia-driver-525 already installed"
-    fi
-
     # update conda environment for GPU systems
     info "Updating brand-speech conda env for GPU-enabled systems"
     conda env update --file $install_script_dir/environment_gpu.yaml --prune
@@ -82,24 +69,27 @@ else
     sudo apt-get update
     sudo apt-get install libcudnn8=8.8.0.*-1+cuda11.8
     rm cuda-keyring_1.1-1_all.deb
+
+    # update conda environment
+    info "Updating brand-speech-tts conda env"
+    conda env update --file $install_script_dir/environment_tts.yaml --prune
+    checkStatus $? "conda update failed"
+    info "conda env successfully updated"
+
+    # download the TTS model
+    info "Downloading LJ Speech TTS model"
+    curwd=$(pwd)
+    cd $install_script_dir/lib/StyleTTS2/StyleTTS2
+    if [ -d "Models" ]; then
+        rm -rf Models
+    fi
+    git clone https://huggingface.co/yl4579/StyleTTS2-LJSpeech
+    mv StyleTTS2-LJSpeech/Models Models
+    rm -rf StyleTTS2-LJSpeech
+    # move our config to the model directory
+    cp -rf $install_script_dir/assets/tts_config/config.yml Models/LJSpeech/config.yml
+    cd $curwd
+    info "Successfully downloaded LJ Speech TTS model"
 fi
-
-# update conda environment
-info "Updating brand-speech-tts conda env"
-conda env update --file $install_script_dir/environment_tts.yaml --prune
-checkStatus $? "conda update failed"
-info "conda env successfully updated"
-
-# download the TTS model
-info "Downloading LJ Speech TTS model"
-curwd=$(pwd)
-cd $install_script_dir/lib/StyleTTS2/StyleTTS2
-git clone https://huggingface.co/yl4579/StyleTTS2-LJSpeech
-mv StyleTTS2-LJSpeech/Models Models
-rm -rf StyleTTS2-LJSpeech
-# move our config to the model directory
-cp -rf $install_script_dir/assets/tts_config/config.yml Models/LJSpeech/config.yml
-cd $curwd
-info "Successfully downloaded LJ Speech TTS model"
 
 info "Completed installations for brand-speech module"
