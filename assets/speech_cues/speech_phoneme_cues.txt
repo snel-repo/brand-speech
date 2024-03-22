@@ -1,38 +1,38 @@
 Bah
 Chah
-chOIce
-commA
+OI [chOIce]
+A [commA]
 Dah
 DO_NOTHING
-drEss
-fAce
+E [drEss]
+A [fAce]
 Fah
-flEEce
-fOOt
+EE [flEEce]
+OO [fOOt]
 Gah
-gOAt
-gOOse
+OA [gOAt]
+OO [gOOse]
 Hah
 Jah
 Kah
-kIt
+I [kIt]
 Lah
-lettER
-lOt
+ER [lettER]
+O [lOt]
 Mah
-mOUth
+OU [mOUth]
 Ngah
 Pah
-prIce
+I [prIce]
 Rah
 Sah
 Shah
-strUt
+U [strUt]
 Tah
 Thah
-THe
-thOUGHt
-trAp
+TH [THe]
+OUGH [thOUGHt]
+A [trAp]
 Vah
 Wah
 Yah
