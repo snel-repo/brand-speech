@@ -217,6 +217,39 @@ class brainToText_closedLoop(BRANDNode):
 
         return logits, states
 
+    def load_channel_mask(self):
+        # initialize the channel mask to include all channels
+        self.ch_mask = np.arange(self.n_features)
+        # remove channels specified in excl_chans
+        if self.excl_chans:
+            self.ch_mask = np.setdiff1d(self.ch_mask, self.excl_chans)
+
+        # get list of masked channels
+        if hasattr(self, 'ch_mask_stream'):
+            ch_mask_entry = self.r.xrevrange(self.ch_mask_stream,
+                                             '+',
+                                             '-',
+                                             count=1)
+            if ch_mask_entry:
+                stream_mask = np.frombuffer(ch_mask_entry[0][1][b'channels'],
+                                            dtype=np.uint16)
+                self.ch_mask = np.intersect1d(self.ch_mask, stream_mask)
+                for c in range(1, -(self.n_features // -self.tot_ch)):
+                    self.ch_mask = np.concatenate((self.ch_mask, self.ch_mask + self.tot_ch * c))
+                logging.info("Loaded channel mask from stream "
+                             f"{self.ch_mask_stream}")
+                if not self.zero_masked_chans:  # masked channels are dropped
+                    logging.info('Overriding n_features parameter '
+                                 f'{self.n_features} with {len(self.ch_mask)}')
+                    self.n_features = len(self.ch_mask)
+            else:
+                logging.warning(
+                    f"'ch_mask_stream' was set to {self.ch_mask_stream}, but "
+                    "there were no entries. Defaulting to using all channels")
+                self.ch_mask = np.arange(self.n_features)
+        self.ch_mask.sort()
+        logging.info(self.ch_mask)
+
 
     def run(self):
 
@@ -250,6 +283,12 @@ class brainToText_closedLoop(BRANDNode):
         auto_punctuation = self.parameters.get("auto_punctuation", True)
 
         use_local_lm = self.parameters.get("use_local_lm", True)
+
+        self.n_features = int(self.parameters.get("n_features", 512))
+        self.excl_chans = self.parameters.get("excl_chans", [])
+        self.ch_mask_stream = self.parameters.get("ch_mask_stream", None)
+        self.tot_ch = int(self.parameters.get("tot_ch", 256))
+        self.zero_masked_chans = bool(self.parameters.get("zero_masked_chans", True))
         
         # prepare stuff for remote language model if needed
         if not use_local_lm:
@@ -344,6 +383,9 @@ class brainToText_closedLoop(BRANDNode):
         else:
             logging.error(f'Could not find block means on path: {blockMean_path}')
 
+
+        # --------------------------- load channel mask --------------------------------------------
+        self.load_channel_mask()
 
         # --------------------------- initialize language model ------------------------------------
         if use_local_lm:
@@ -593,6 +635,13 @@ class brainToText_closedLoop(BRANDNode):
             data_snippet = (data_snippet - stats.mean) / (stats.std + 1e-8)   # z score
             data_snippet[data_snippet > zScoreClip] = 0                     # z score clip
             data_snippet[data_snippet < -zScoreClip] = 0
+            # zero out masked channels
+            if self.zero_masked_chans:
+                data_snippet_zeroed = np.zeros_like(data_snippet)
+                data_snippet_zeroed[self.ch_mask] = data_snippet[self.ch_mask]
+                data_snippet = data_snippet_zeroed
+            else:
+                data_snippet = data_snippet[self.ch_mask]
             data_snippet = data_snippet[np.newaxis, np.newaxis, :]          # expand axis
 
             # concatenate data snippet to buffer
@@ -748,6 +797,7 @@ class brainToText_closedLoop(BRANDNode):
                             # timeout if no data received for X ms
                             if len(read_result) == 0:
                                 logging.warning('Auto-punctuated text not received within 5 seconds. Skipping punctuation.')
+                                self.punctuation_last_input_entry_seen = self.get_current_redis_time_ms()
                             else:
                                 # read this data snippet
                                 for entry_id, entry_dict in read_result[0][1]:

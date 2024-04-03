@@ -49,7 +49,6 @@ done
 kernel_info=$(uname -v)
 if [[ $kernel_info == *"PREEMPT_RT"* ]]; then
     info "Realtime kernel detected, skipping GPU-related installations"
-    driver_installed=0
 
     # update conda environment for CPU-only systems
     info "Updating brand-speech conda env for CPU-only systems"
@@ -57,19 +56,6 @@ if [[ $kernel_info == *"PREEMPT_RT"* ]]; then
     checkStatus $? "conda update failed"
     info "conda env successfully updated"
 else
-    # specifically check whether nvidia-driver-525 is installed, because it requires a reboot
-    nvidia_driver_version=$(dpkg -l nvidia-driver-525 | awk '/^ii/ {print $3}')
-    if [ "$nvidia_driver_version" != "525.147.05-0ubuntu0.22.04.1" ]; then
-        info "Installing nvidia-driver-525"
-        sudo apt-get -y install nvidia-driver-525=525.147.05-0ubuntu0.22.04.1
-        checkStatus $? "failed to install nvidia-driver-525"
-        info "Successfully installed nvidia-driver-525"
-        driver_installed=1
-    else
-        info "nvidia-driver-525 already installed"
-        driver_installed=0
-    fi
-
     # update conda environment for GPU systems
     info "Updating brand-speech conda env for GPU-enabled systems"
     conda env update --file $install_script_dir/environment_gpu.yaml --prune
@@ -95,6 +81,9 @@ info "conda env successfully updated"
 info "Downloading LJ Speech TTS model"
 curwd=$(pwd)
 cd $install_script_dir/lib/StyleTTS2/StyleTTS2
+if [ -d "Models" ]; then
+    rm -rf Models
+fi
 git clone https://huggingface.co/yl4579/StyleTTS2-LJSpeech
 mv StyleTTS2-LJSpeech/Models Models
 rm -rf StyleTTS2-LJSpeech
@@ -102,9 +91,5 @@ rm -rf StyleTTS2-LJSpeech
 cp -rf $install_script_dir/assets/tts_config/config.yml Models/LJSpeech/config.yml
 cd $curwd
 info "Successfully downloaded LJ Speech TTS model"
-
-if [ "$driver_installed" == "1" ]; then
-    warning "nvidia-driver-525 was installed, please reboot the computer"
-fi
 
 info "Completed installations for brand-speech module"
