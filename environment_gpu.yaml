@@ -129,6 +129,7 @@ dependencies:
   - zlib=1.2.13=hd590300_5
   - zstd=1.5.5=hfc55251_0
   - pip:
+    - accelerate==0.20.3
     - annotated-types==0.6.0
     - antlr4-python3-runtime==4.9.3
     - anyio==4.0.0
@@ -139,6 +140,7 @@ dependencies:
     - async-lru==2.0.4
     - babel==2.13.1
     - beautifulsoup4==4.12.2
+    - bitsandbytes==0.41.1
     - bleach==6.1.0
     - coloredlogs==15.0.1
     - comm==0.1.4
