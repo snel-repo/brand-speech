@@ -423,8 +423,8 @@ if __name__ == "__main__":
     parser.add_argument('--nbest', type=int, default=1, help='# of candidate sentences for LM decoding')
     parser.add_argument('--blank_penalty', type=float, default=7.0, help='Blank penalty for LM')
 
-    parser.add_argument('--rescore', type=bool, default=False, help='whether or not to rescore')
-    parser.add_argument('--do_opt', type=bool, default=False, help='Use the opt model?')
+    parser.add_argument('--rescore', action='store_true', help='whether or not to rescore')
+    parser.add_argument('--do_opt', action='store_true', help='Use the opt model?')
     parser.add_argument('--opt_cache_dir', type=str, default="/home/lm-pc/brand/huggingface", help='path to opt cache')
     parser.add_argument('--alpha', type=float, default=0.6, help='alpha value [0-1]: Higher = more weight on OPT rescore. Lower = more weight on LM rescore')
 
