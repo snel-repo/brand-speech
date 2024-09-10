@@ -28,6 +28,13 @@ class State(Enum):
     DECODING = 1
     DONE = 2
 
+task_state_to_legacy = {
+    b'': -1,
+    b'start_trial': 0,
+    b'go': 1,
+    b'freeze': 3,
+    b'end_trial': 3
+}
 
 # class for normalization adaptation
 class FeatureStats:
@@ -281,6 +288,10 @@ class brainToText_closedLoop(BRANDNode):
         autosaveStats_path = self.parameters.get("autosaveStats_path", blockMean_path)  # where to save normalization stats to file
         use_online_trainer = self.parameters.get("use_online_trainer", False)
         auto_punctuation = self.parameters.get("auto_punctuation", True)
+        legacy = self.parameters.get("legacy_mode", True)
+        task_state_stream = self.parameters.get("task_state_stream", 'task_state')
+        sync_key = self.parameters.get("sync_key", 'sync').encode()
+        time_key = self.parameters.get("time_key", 'ts').encode()
 
         use_local_lm = self.parameters.get("use_local_lm", True)
 
@@ -546,9 +557,14 @@ class brainToText_closedLoop(BRANDNode):
                 # quick patch, convert summed SBP to mean SBP
                 data_snippet[len(data_snippet)//2:] /= 20.
 
+                sync_dict = entry_dict[sync_key]
 
             # get the task state [-1=INITIALIZING, 0=START, 1=GO, 3=END, 4=PAUSED]
-            newTaskState = int(self.r.get('task_state_current').decode())
+            if legacy:
+                newTaskState = int(self.r.get('task_state_current').decode())
+            else:
+                reply = self.r.xrevrange(task_state_stream, '+', '-', count=1)
+                newTaskState = task_state_to_legacy[reply[0][1][b'state']]
             forceStop = False
             if newTaskState==-1:
                 # Task has not been started yet
@@ -689,6 +705,10 @@ class brainToText_closedLoop(BRANDNode):
                         nonBlankTicks += 1
 
                     self.r.xadd(output_stream, {'logits': logits[0,0,:].tobytes(order='C') })
+                    self.r.xadd(self.NAME,
+                        {b'logits': logits[0,0,:].tobytes(order='C'),
+                         sync_key: sync_dict,
+                         time_key: np.uint64(time.monotonic_ns()).tobytes()})
 
                     if verbose:
                         logging.info(F'Blank ticks: {blankTicks}, non-blank ticks: {nonBlankTicks}')
