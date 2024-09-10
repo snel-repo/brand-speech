@@ -255,4 +255,6 @@ dependencies:
     - webencodings==0.5.1
     - websocket-client==1.8.0
     - widgetsnbextension==4.0.13
+    - -e ../../brand/lib/python
+    - -e lib/nptlrig2/LanguageModelDecoder/runtime/server/x86
 prefix: /home/samnt/lib/miniconda3/envs/lm
