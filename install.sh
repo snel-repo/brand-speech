@@ -22,6 +22,9 @@ checkStatus () {
     [ "$1" == "0" ] || error "$2"
 }
 
+# first argument is whether to install the 3-gram LM
+install_lm=${1:-1}
+
 install_script_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 
 info "Installing Git LFS"
@@ -69,6 +72,25 @@ else
     sudo apt-get update
     sudo apt-get install libcudnn8=8.8.0.*-1+cuda11.8
     rm cuda-keyring_1.1-1_all.deb
+
+    if [ "$install_lm" == "1" ]; then
+        # check if the LM is already downloaded
+        if [ -d "/samba/languageModel" ]; then
+            info "Language model already downloaded"
+        else
+            info "Downloading language model, this will take a while"
+            mkdir -p /samba/languageModel
+            wget --continue -O /samba/languageModel/lm.tar.gz https://datadryad.org/api/v2/files/2547356/download
+            info "Extracting language model"
+            tar -xvf /samba/languageModel/lm.tar.gz -C /samba
+            rm /samba/languageModel/lm.tar.gz
+            chmod -R 777 /samba/languageModel
+            info "Successfully downloaded language model"
+
+            info "Installing language model environment"
+            conda env update --file $install_script_dir/environment_lm.yaml --prune
+        fi
+    fi
 fi
 
 # update conda environment
