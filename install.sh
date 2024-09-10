@@ -86,6 +86,9 @@ else
             rm /samba/languageModel/lm.tar.gz
             chmod -R 777 /samba/languageModel
             info "Successfully downloaded language model"
+
+            info "Installing language model environment"
+            conda env update --file $install_script_dir/environment_lm.yaml --prune
         fi
     fi
 fi
