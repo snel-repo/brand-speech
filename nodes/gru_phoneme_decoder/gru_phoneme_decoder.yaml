@@ -1,0 +1,14 @@
+RedisStreams:
+  Inputs:
+    #
+  Outputs:
+    logits:
+      enable_nwb:           True
+      type_nwb:             TimeSeries
+      logits:
+        chan_per_stream:    41
+        samp_per_stream:    1
+        sample_type:        float32
+        nwb:
+          description:      GRU output logits
+          unit:             logits
