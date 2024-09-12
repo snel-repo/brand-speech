@@ -188,7 +188,6 @@ dependencies:
     - jupyterlab-widgets==3.0.13
     - kiwisolver==1.4.7
     - llvmlite==0.40.1
-    - lm-decoder==0.0.1
     - matplotlib==3.9.2
     - matplotlib-inline==0.1.7
     - mistune==3.0.2
