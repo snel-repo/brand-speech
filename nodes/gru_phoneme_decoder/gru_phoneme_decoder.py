@@ -6,6 +6,7 @@ import tensorflow as tf
 from datetime import datetime
 import random
 import os
+import yaml
 import logging
 import coloredlogs
 from omegaconf import OmegaConf
@@ -368,31 +369,55 @@ class brainToText_closedLoop(BRANDNode):
 
 
         # ------------------------------ load blockMean and blockStd -------------------------------------
+        
         if not os.path.exists(blockMean_path):
-            logging.error(f'Block Mean directory not found: {blockMean_path}')
+            # This is almost exclusively a block of code that needs to run for a
+            # pretrained outside of session decoder running without collecting 
+            # any data in session. 
+            logging.warning(f"Folder at {blockMean_path} not found, trying to pull norms from thresh_norm means/stds")
+            save_filepath = self.r.config_get('dir')['dir']
+            save_filepath = os.path.dirname(save_filepath)  
+            # This is supposedly where calcThreshNorm saves its info, so we can
+            # by default pull norm and STD from here if the provided 
+            # blockMean_path is not found.
+            blockMean_path_tn = os.path.join(save_filepath, 'thresh_norm')
+            if not os.path.exists(blockMean_path_tn):
+                logging.error(f'Block Mean directory not found: {blockMean_path}\nAND thresh_norm directory not found: {blockMean_path_tn}\nPlease run the reference block.')
 
-        updated_mean_dirs = glob(str(Path(blockMean_path, 'updated_means_block(*)')))
+            save_filename = self.r.config_get('dbfilename')['dbfilename']
+            save_filename = os.path.splitext(save_filename)[0]
 
-        if updated_mean_dirs == []:
-            blockMean_path = blockMean_path
-        elif blockMean_load_num == -1:
-            blockMean_path = self.sort_blockmean_dirs(updated_mean_dirs)[-1]
+            # Pathnames should be DIR/DIR/DIR/subjectid_date_blocknumber.yaml
+            updated_mean_dirs = glob(str(Path(blockMean_path_tn, f'{save_filename}_*.yaml')))
+            list.sort(updated_mean_dirs)
+            blockMean_file = updated_mean_dirs[-1]
+            data = yaml.safe_load(open(blockMean_file, 'r'))
+            blockMean = np.array(data['means']) # len(channels)*2 because the second half of the list contains SBP
+            blockStd = np.array(data['stds']) # len(channels)*2 because the second half of the list contains SBP
+            logging.info(f'Loaded means and stds from: {blockMean_file}')
         else:
-            blockMean_path = glob(str(Path(blockMean_path, f'updated_means_block({blockMean_load_num})')))[-1]
+            updated_mean_dirs = glob(str(Path(blockMean_path, 'updated_means_block(*)')))
 
-        logging.info(F'Loading blockMean and blockStd from: {blockMean_path}')
-        if os.path.isfile(f'{blockMean_path}/blockMean.npy') and os.path.isfile(f'{blockMean_path}/blockStd.npy'):
-            blockMean = np.load(blockMean_path + "/blockMean.npy")
-            blockStd = np.load(blockMean_path + "/blockStd.npy")
-            logging.info(f'Loaded blockMean and blockStd from: {blockMean_path}')
+            if updated_mean_dirs == []:
+                blockMean_path = blockMean_path
+            elif blockMean_load_num == -1:
+                blockMean_path = self.sort_blockmean_dirs(updated_mean_dirs)[-1]
+            else:
+                blockMean_path = glob(str(Path(blockMean_path, f'updated_means_block({blockMean_load_num})')))[-1]
 
-        elif os.path.isfile(f'{blockMean_path}/rdbToMat_blockMean.npy') and os.path.isfile(f'{blockMean_path}/rdbToMat_blockStd.npy'):
-            blockMean = np.load(blockMean_path + "/rdbToMat_blockMean.npy")
-            blockStd = np.load(blockMean_path + "/rdbToMat_blockStd.npy")
-            logging.info(f'Loaded rdbToMat_blockMean and rdbToMat_blockStd from: {blockMean_path}')
-            
-        else:
-            logging.error(f'Could not find block means on path: {blockMean_path}')
+            logging.info(F'Loading blockMean and blockStd from: {blockMean_path}')
+            if os.path.isfile(f'{blockMean_path}/blockMean.npy') and os.path.isfile(f'{blockMean_path}/blockStd.npy'):
+                blockMean = np.load(blockMean_path + "/blockMean.npy")
+                blockStd = np.load(blockMean_path + "/blockStd.npy")
+                logging.info(f'Loaded blockMean and blockStd from: {blockMean_path}')
+
+            elif os.path.isfile(f'{blockMean_path}/rdbToMat_blockMean.npy') and os.path.isfile(f'{blockMean_path}/rdbToMat_blockStd.npy'):
+                blockMean = np.load(blockMean_path + "/rdbToMat_blockMean.npy")
+                blockStd = np.load(blockMean_path + "/rdbToMat_blockStd.npy")
+                logging.info(f'Loaded rdbToMat_blockMean and rdbToMat_blockStd from: {blockMean_path}')
+                
+            else:
+                logging.error(f'Could not find block means on path: {blockMean_path}')
 
 
         # --------------------------- load channel mask --------------------------------------------
