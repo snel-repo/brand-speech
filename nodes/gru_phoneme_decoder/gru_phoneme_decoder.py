@@ -376,7 +376,8 @@ class brainToText_closedLoop(BRANDNode):
             # any data in session. 
             logging.warning(f"Folder at {blockMean_path} not found, trying to pull norms from thresh_norm means/stds")
             save_filepath = self.r.config_get('dir')['dir']
-            save_filepath = os.path.dirname(save_filepath)  
+            # DROP THE /MNT
+            save_filepath = os.path.dirname(save_filepath)[4:]  
             # This is supposedly where calcThreshNorm saves its info, so we can
             # by default pull norm and STD from here if the provided 
             # blockMean_path is not found.
@@ -385,10 +386,12 @@ class brainToText_closedLoop(BRANDNode):
                 logging.error(f'Block Mean directory not found: {blockMean_path}\nAND thresh_norm directory not found: {blockMean_path_tn}\nPlease run the reference block.')
 
             save_filename = self.r.config_get('dbfilename')['dbfilename']
-            save_filename = os.path.splitext(save_filename)[0]
+            save_filename = os.path.splitext(save_filename)[0][:-4]
+            logging.info(f'Looking for updated means in: {save_filename}')
 
             # Pathnames should be DIR/DIR/DIR/subjectid_date_blocknumber.yaml
             updated_mean_dirs = glob(str(Path(blockMean_path_tn, f'{save_filename}_*.yaml')))
+            logging.info(f'Updated mean dirs: {updated_mean_dirs}')
             list.sort(updated_mean_dirs)
             blockMean_file = updated_mean_dirs[-1]
             data = yaml.safe_load(open(blockMean_file, 'r'))
