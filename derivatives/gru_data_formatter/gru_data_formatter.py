@@ -115,7 +115,7 @@ session_description = metadata_stream[0][1].get(b'session_description', b'').dec
 block_decription = metadata_stream[0][1].get(b'block_description', b'').decode()
 graph_name = model_data['graph_name']
 block_num = int(metadata_stream[0][1].get(b'block_number', b'-1').decode())
-start_time = np.frombuffer(metadata_stream[0][1].get(b'start_time', b'-1'), dtype=np.uint64)[0]
+start_time = np.frombuffer(metadata_stream[0][1].get(b'start_time', np.array(-1, dtype=np.uint64).tobytes()), dtype=np.uint64)[0]
 
 # ---------------------------------------------------------------------------------------------------------------
 
@@ -269,7 +269,7 @@ else:
 # ---------------------------------------------------------------------------------------------------------------
 
 # initialzie RNN decoder output stream
-stream = r.xrange(decoder_output_stream_name)
+stream = r.xrange('decoder_output_stream_name')
 
 # if the stream doesn't exist (open loop), make variables blank
 if stream==[]:
