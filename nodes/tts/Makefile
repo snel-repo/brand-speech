@@ -4,9 +4,9 @@ ROOT ?=../..
 include $(ROOT)/setenv.mk
 
 # manually set path for conda environment
-CONDA_PREFIX=$(shell conda info --base)/envs/brand-speech-tts
+CONDA_PREFIX=$(shell conda info --base)/envs/brand-speech
 
-PYTHON_VERSION=3.10 # This works for brand-speech-tts env
+PYTHON_VERSION=3.9 # This works for brand-speech-tts env
 PYTHON_LIB=python$(PYTHON_VERSION)
 
 LIBPYTHON=$(CONDA_PREFIX)/lib/
