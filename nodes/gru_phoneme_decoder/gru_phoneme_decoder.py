@@ -270,11 +270,9 @@ class brainToText_closedLoop(BRANDNode):
         binned_input_stream = self.parameters["binned_input_stream"]
         output_stream = self.parameters["output_stream"]
         metadata_stream_name = self.parameters.get(["metadata_stream"], "block_metadata")
-        logging.info("Retrieving Metadata...")
-        metadata_stream = r.xrevrange(metadata_stream_name, count=1)
+        metadata_stream = self.r.xrevrange(metadata_stream_name, count=1)
         participant = metadata_stream[0][1].get(b'participant', b'unknown_participant').decode()
         session_name = metadata_stream[0][1].get(b'session_name', b'unknown_session_name').decode()
-        logging.info("Metadata retrieved.")
         # BLOCK MEAN PARAMS ----------------------------------------------------
         blockMean_path = self.parameters.get(["blockMean_path"], None)
         if blockMean_path is None:    
