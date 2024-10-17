@@ -41,6 +41,8 @@ def load_model(init_model_dir, ckpt_idx, gpu_number):
 
     # Load model config and set which checkpoint to load
     args = OmegaConf.load(os.path.join(init_model_dir, 'args.yaml'))
+    # To make sure that the model sees the right training_log directory
+    args['outputDir'] = init_model_dir
     args['loadDir'] = './'
     args['mode'] = 'infer'
     args['loadCheckpointIdx'] = ckpt_idx
