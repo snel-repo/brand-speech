@@ -396,7 +396,9 @@ class brainToText_closedLoop(BRANDNode):
             blockMean_file = updated_mean_dirs[-1]
             data = yaml.safe_load(open(blockMean_file, 'r'))
             blockMean = np.array(data['means']) # len(channels)*2 because the second half of the list contains SBP
+            blockMean[len(blockMean)//2:] /= 20. # calcThreshNorm saves the sum of SBP, so we need to divide by 20 to get the mean
             blockStd = np.array(data['stds']) # len(channels)*2 because the second half of the list contains SBP
+            blockStd[len(blockStd)//2:] /= np.sqrt(20.) # calcThreshNorm saves the sum of SBP, so we need to divide by sqrt(20) to get the std
             logging.info(f'Loaded means and stds from: {blockMean_file}')
         else:
             updated_mean_dirs = glob(str(Path(blockMean_path, 'updated_means_block(*)')))
