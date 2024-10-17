@@ -43,18 +43,18 @@ class brainToText_onlineTrainer(BRANDNode):
         super().__init__()
 
         ## Load parameters, using `self.parameters`.
-        metadata_stream_name = self.parameters.get(["metadata_stream"], 'block_metadata')
-        metadata_stream = r.xrevrange(metadata_stream_name, count=1)
+        metadata_stream_name = self.parameters.get("metadata_stream", 'block_metadata')
+        metadata_stream = self.r.xrevrange(metadata_stream_name, count=1)
         participant = metadata_stream[0][1].get(b'participant', b'unknown_participant').decode()
         session_name = metadata_stream[0][1].get(b'session_name', b'unknown_session_name').decode()
         
         # CONFIG PATH ----------------------------------------------------------
-        self.config_file_path = self.parameters.get(["config_file_path"], None)
+        self.config_file_path = self.parameters.get("config_file_path", None)
         if self.config_file_path is None:
-            self.config_file_path = f'/samba/data/{participant}/{session_name}/RawData/Models'
+            self.config_file_path = f'/samba/data/{participant}/{session_name}/RawData/Models/gru_decoder/online_trainer_config.yaml'
             logging.warning(f'No config file path provided. Using default: {self.config_file_path}')
         # RNN INIT PATH --------------------------------------------------------
-        self.init_model_dir = self.parameters.get(["init_model_dir"], None)
+        self.init_model_dir = self.parameters.get("init_model_dir", None)
         if self.init_model_dir is None:
             self.init_model_dir = f'/samba/data/{participant}/{session_name}/RawData/Models/gru_decoder'
             logging.warning(f'No initial model directory provided. Using default: {self.init_model_dir}')

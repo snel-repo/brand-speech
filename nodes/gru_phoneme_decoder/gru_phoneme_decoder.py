@@ -270,24 +270,18 @@ class brainToText_closedLoop(BRANDNode):
         ## Load parameters, using `self.parameters`.
         binned_input_stream = self.parameters["binned_input_stream"]
         output_stream = self.parameters["output_stream"]
-        metadata_stream_name = self.parameters.get(["metadata_stream"], "block_metadata")
+        metadata_stream_name = self.parameters.get("metadata_stream", "block_metadata")
         metadata_stream = self.r.xrevrange(metadata_stream_name, count=1)
         participant = metadata_stream[0][1].get(b'participant', b'unknown_participant').decode()
         session_name = metadata_stream[0][1].get(b'session_name', b'unknown_session_name').decode()
         # BLOCK MEAN PARAMS ----------------------------------------------------
-        blockMean_path = self.parameters.get(["blockMean_path"], None)
-        if blockMean_path is None:    
-            blockMean_path = f'/samba/data/{participant}/{session_name}/RawData/GRU_Training_Files/tfdata'
-            logging.warning('Block mean path not provided, using default: {blockMean_path}')
-        blockMean_load_num = int(self.parameters.get(["blockMean_load_num"], -1))
-        # STATS SAVING PARAMS --------------------------------------------------
-        autosaveStats = self.parameters.get("autosaveStats", True)        # whether to save normalization stats to file
-        autosaveStats_path = self.parameters.get("autosaveStats_path", blockMean_path)  # where to save normalization stats to file
+        blockMean_path = self.parameters.get("blockMean_path", None)
+        blockMean_load_num = int(self.parameters.get("blockMean_load_num", -1))
         # RNN PARAMS -----------------------------------------------------------
-        RNN_dir = self.parameters.get(["RNN_path"], None)
+        RNN_dir = self.parameters.get("RNN_path", None)
         if RNN_dir is None:
             RNN_dir = f'/samba/data/{participant}/{session_name}/RawData/Models/gru_decoder'
-            logging.warning('RNN path not provided, using default: {RNN_dir}')
+            logging.warning(f'RNN path not provided, using default: {RNN_dir}')
         RNN_model_number = int(self.parameters.get("RNN_model_number", -1))
         # LM PARAMS ------------------------------------------------------------
         LM_dir = self.parameters["LM_path"]
@@ -384,8 +378,18 @@ class brainToText_closedLoop(BRANDNode):
 
 
         # ------------------------------ load blockMean and blockStd -------------------------------------
+        thresh_norm = False
+        if blockMean_path is None:
+            path = f'/samba/data/{participant}/{session_name}/RawData/GRU_Training_Files/tfdata'
+            blockMean_dirs = glob(str(Path(path, 'updated_means_block(*)')))
+            if blockMean_dirs:
+                blockMean_path = path
+            else:
+                thresh_norm = True
+        elif not os.path.exists(blockMean_path):
+            thresh_norm = True
         
-        if not os.path.exists(blockMean_path):
+        if thresh_norm:
             # This is almost exclusively a block of code that needs to run for a
             # pretrained outside of session decoder running without collecting 
             # any data in session. 
@@ -415,6 +419,9 @@ class brainToText_closedLoop(BRANDNode):
             blockStd = np.array(data['stds']) # len(channels)*2 because the second half of the list contains SBP
             blockStd[len(blockStd)//2:] /= np.sqrt(20.) # calcThreshNorm saves the sum of SBP, so we need to divide by sqrt(20) to get the std
             logging.info(f'Loaded means and stds from: {blockMean_file}')
+
+            blockMean_path = f'/samba/data/{participant}/{session_name}/RawData/GRU_Training_Files/tfdata'
+
         else:
             updated_mean_dirs = glob(str(Path(blockMean_path, 'updated_means_block(*)')))
 
@@ -438,6 +445,12 @@ class brainToText_closedLoop(BRANDNode):
                 
             else:
                 logging.error(f'Could not find block means on path: {blockMean_path}')
+
+        # STATS SAVING PARAMS --------------------------------------------------
+        autosaveStats = self.parameters.get("autosaveStats", True)        # whether to save normalization stats to file
+        autosaveStats_path = self.parameters.get("autosaveStats_path", blockMean_path)  # where to save normalization stats to file
+        if autosaveStats_path is None:
+            autosaveStats_path = blockMean_path
 
 
         # --------------------------- load channel mask --------------------------------------------
