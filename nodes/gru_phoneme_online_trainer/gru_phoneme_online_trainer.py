@@ -626,7 +626,8 @@ class brainToText_onlineTrainer(BRANDNode):
     
 
     def terminate(self, sig, frame):
-        logging.info('SIGINT received, Exiting')
+        logging.info('SIGINT received, saving current state pickle file then exiting')
+        self.save_state()
         gc.collect()
         sys.exit(0)
 
