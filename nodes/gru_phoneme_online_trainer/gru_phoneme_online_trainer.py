@@ -243,6 +243,9 @@ class brainToText_onlineTrainer(BRANDNode):
         if self.state_path.exists():
             with self.state_path.open('rb') as f:
                 self.state = pickle.load(f)
+            logging.info(f'state pickle file found, loading state from {self.state_path}')
+        else:
+            logging.info(f'No state pickle file found, starting with empty state')
 
 
     def save_state(self):
@@ -626,7 +629,8 @@ class brainToText_onlineTrainer(BRANDNode):
     
 
     def terminate(self, sig, frame):
-        logging.info('SIGINT received, Exiting')
+        logging.info('SIGINT received, saving current state pickle file then exiting')
+        self.save_state()
         gc.collect()
         sys.exit(0)
 
