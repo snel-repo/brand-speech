@@ -238,38 +238,41 @@ blockStd = np.std(np.concatenate(inputFeatures, 0), axis=0, keepdims=True).astyp
 
 # ---------------------------------------------------------------------------------------------------------------
 
+microphone_data = []
+microphone_nsp_time = []
+
 if include_audio==1:
     # get analog audio signal and timestamps
     stream = r.xrange(analog_stream_name)
 
-    microphone_data = []
-    microphone_nsp_time = []
+    if stream:
 
-    for entry_id, entry in stream:
-        microphone_data.append(np.frombuffer(entry[b'samples'], np.int16).reshape(-1,2)[:,0])
-        microphone_nsp_time.append(np.frombuffer(entry[b'timestamps'], dtype=np.uint64))
+        for entry_id, entry in stream:
+            microphone_data.append(np.frombuffer(entry[b'samples'], np.int16).reshape(-1,2)[:,0])
+            microphone_nsp_time.append(np.frombuffer(entry[b'timestamps'], dtype=np.uint64))
 
-    microphone_data = np.array(microphone_data).reshape(-1, 1)
-    microphone_nsp_time = np.array(microphone_nsp_time).reshape(-1, 1)
+        microphone_data = np.array(microphone_data).reshape(-1, 1)
+        microphone_nsp_time = np.array(microphone_nsp_time).reshape(-1, 1)
 
-    # trim analog data to begin at the start of the first trial, end at the end of the last trial
-    nsp_analog_start_time = trial_start_nsp_analog_time[0]
-    nsp_analog_end_time = trial_end_nsp_analog_time[-1]
+        # trim analog data to begin at the start of the first trial, end at the end of the last trial
+        nsp_analog_start_time = trial_start_nsp_analog_time[0]
+        nsp_analog_end_time = trial_end_nsp_analog_time[-1]
 
-    microphone_start_ind = np.argmin(np.abs(microphone_nsp_time - nsp_analog_start_time))
-    microphone_end_ind = np.argmin(np.abs(microphone_nsp_time - nsp_analog_end_time))
+        microphone_start_ind = np.argmin(np.abs(microphone_nsp_time - nsp_analog_start_time))
+        microphone_end_ind = np.argmin(np.abs(microphone_nsp_time - nsp_analog_end_time))
 
-    microphone_data = microphone_data[microphone_start_ind:microphone_end_ind]
-    microphone_nsp_time = microphone_nsp_time[microphone_start_ind:microphone_end_ind]
+        microphone_data = microphone_data[microphone_start_ind:microphone_end_ind]
+        microphone_nsp_time = microphone_nsp_time[microphone_start_ind:microphone_end_ind]
+    
+    else:
 
-else:
-    microphone_data = []
-    microphone_nsp_time = []
+        logging.warning('No analog audio stream found in Redis. Skipping audio data.')
+
 
 # ---------------------------------------------------------------------------------------------------------------
 
 # initialzie RNN decoder output stream
-stream = r.xrange('decoder_output_stream_name')
+stream = r.xrange(decoder_output_stream_name)
 
 # if the stream doesn't exist (open loop), make variables blank
 if stream==[]:

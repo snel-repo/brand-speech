@@ -43,9 +43,24 @@ class brainToText_onlineTrainer(BRANDNode):
         super().__init__()
 
         ## Load parameters, using `self.parameters`.
-        self.config_file_path = self.parameters["config_file_path"]
-        self.init_model_dir = self.parameters["init_model_dir"]
+        metadata_stream_name = self.parameters.get("metadata_stream", 'block_metadata')
+        metadata_stream = self.r.xrevrange(metadata_stream_name, count=1)
+        participant = metadata_stream[0][1].get(b'participant', b'unknown_participant').decode()
+        session_name = metadata_stream[0][1].get(b'session_name', b'unknown_session_name').decode()
+        
+        # CONFIG PATH ----------------------------------------------------------
+        self.config_file_path = self.parameters.get("config_file_path", None)
+        if self.config_file_path is None:
+            self.config_file_path = f'/samba/data/{participant}/{session_name}/RawData/Models/gru_decoder/online_trainer_config.yaml'
+            logging.warning(f'No config file path provided. Using default: {self.config_file_path}')
+        # RNN INIT PATH --------------------------------------------------------
+        self.init_model_dir = self.parameters.get("init_model_dir", None)
+        if self.init_model_dir is None:
+            self.init_model_dir = f'/samba/data/{participant}/{session_name}/RawData/Models/gru_decoder'
+            logging.warning(f'No initial model directory provided. Using default: {self.init_model_dir}')
+        
         self.init_model_number = int(self.parameters.get("init_model_number", -1))  # -1 means that the latest model will be used
+        # TRAINING PARAMETERS --------------------------------------------------
         self.training_frequency = int(self.parameters.get("training_frequency", 1))  # How often to train the model (every N trials)     
         self.min_num_trials = int(self.parameters.get('min_num_trials', 10))  
         self.max_trial_len_s = int(self.parameters.get('max_trial_len_s', 50))
@@ -54,6 +69,7 @@ class brainToText_onlineTrainer(BRANDNode):
         self.use_threshold_crossings = bool(self.parameters.get('use_threshold_crossings', True))
         self.use_spike_band_power = bool(self.parameters.get('use_spike_band_power', True))
         gpu_number = str(self.parameters.get("gpu_number", "1"))       # GPU for tensorflow to use. -1 means that GPU is hidden and inference will happen on CPU.
+        
         self.verbose = bool(self.parameters.get('verbose', False))
 
         self.n_features = int(self.parameters.get("n_features", 512))
@@ -227,6 +243,9 @@ class brainToText_onlineTrainer(BRANDNode):
         if self.state_path.exists():
             with self.state_path.open('rb') as f:
                 self.state = pickle.load(f)
+            logging.info(f'state pickle file found, loading state from {self.state_path}')
+        else:
+            logging.info(f'No state pickle file found, starting with empty state')
 
 
     def save_state(self):
@@ -610,7 +629,8 @@ class brainToText_onlineTrainer(BRANDNode):
     
 
     def terminate(self, sig, frame):
-        logging.info('SIGINT received, Exiting')
+        logging.info('SIGINT received, saving current state pickle file then exiting')
+        self.save_state()
         gc.collect()
         sys.exit(0)
 
