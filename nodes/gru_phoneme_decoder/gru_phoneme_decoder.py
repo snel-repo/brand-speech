@@ -6,6 +6,7 @@ import tensorflow as tf
 from datetime import datetime
 import random
 import os
+import yaml
 import logging
 import coloredlogs
 from omegaconf import OmegaConf
@@ -269,23 +270,32 @@ class brainToText_closedLoop(BRANDNode):
         ## Load parameters, using `self.parameters`.
         binned_input_stream = self.parameters["binned_input_stream"]
         output_stream = self.parameters["output_stream"]
-        blockMean_path = self.parameters["blockMean_path"]
-        blockMean_load_num = int(self.parameters["blockMean_load_num"])
-        RNN_dir = self.parameters["RNN_path"]
+        metadata_stream_name = self.parameters.get("metadata_stream", "block_metadata")
+        metadata_stream = self.r.xrevrange(metadata_stream_name, count=1)
+        participant = metadata_stream[0][1].get(b'participant', b'unknown_participant').decode()
+        session_name = metadata_stream[0][1].get(b'session_name', b'unknown_session_name').decode()
+        # BLOCK MEAN PARAMS ----------------------------------------------------
+        blockMean_path = self.parameters.get("blockMean_path", None)
+        blockMean_load_num = int(self.parameters.get("blockMean_load_num", -1))
+        # RNN PARAMS -----------------------------------------------------------
+        RNN_dir = self.parameters.get("RNN_path", None)
+        if RNN_dir is None:
+            RNN_dir = f'/samba/data/{participant}/{session_name}/RawData/Models/gru_decoder'
+            logging.warning(f'RNN path not provided, using default: {RNN_dir}')
         RNN_model_number = int(self.parameters.get("RNN_model_number", -1))
+        # LM PARAMS ------------------------------------------------------------
         LM_dir = self.parameters["LM_path"]
         logit_interpolation_factor = int(self.parameters.get('logit_interpolation_factor', 1))
         acousticScale = float(self.parameters["LM_acousticScale"])
         nBest = int(self.parameters["LM_nBest"])
         blankPenalty = int(self.parameters["LM_blankPenalty"])
         verbose = self.parameters["verbose"]
+        # OTHER PARAMS ---------------------------------------------------------
         input_network_num = int(self.parameters["input_network_num"])      
         gpuNumber = str(self.parameters.get("gpuNumber", "0"))       # GPU for tensorflow to use. -1 means that GPU is hidden and inference will happen on CPU.
         adaptMean = self.parameters.get("adaptMean", True)                # whether to adapt mean and std of normalization layer
         adaptWindowSize = int(self.parameters.get("adaptWindowSize", 20))      # how many (max) recent trials to use for normalization adaptation
         adaptMinSentences = int(self.parameters.get("adaptMinSentences", 10))  # how many (min) recent trials to use for normalization adaptation
-        autosaveStats = self.parameters.get("autosaveStats", True)        # whether to save normalization stats to file
-        autosaveStats_path = self.parameters.get("autosaveStats_path", blockMean_path)  # where to save normalization stats to file
         use_online_trainer = self.parameters.get("use_online_trainer", False)
         auto_punctuation = self.parameters.get("auto_punctuation", True)
         legacy = self.parameters.get("legacy_mode", True)
@@ -368,31 +378,79 @@ class brainToText_closedLoop(BRANDNode):
 
 
         # ------------------------------ load blockMean and blockStd -------------------------------------
-        if not os.path.exists(blockMean_path):
-            logging.error(f'Block Mean directory not found: {blockMean_path}')
+        thresh_norm = False
+        if blockMean_path is None:
+            path = f'/samba/data/{participant}/{session_name}/RawData/GRU_Training_Files/tfdata'
+            blockMean_dirs = glob(str(Path(path, 'updated_means_block(*)')))
+            if blockMean_dirs:
+                blockMean_path = path
+            else:
+                thresh_norm = True
+        elif not os.path.exists(blockMean_path):
+            thresh_norm = True
+        
+        if thresh_norm:
+            # This is almost exclusively a block of code that needs to run for a
+            # pretrained outside of session decoder running without collecting 
+            # any data in session. 
+            logging.warning(f"Folder at {blockMean_path} not found, trying to pull norms from thresh_norm means/stds")
+            save_filepath = self.r.config_get('dir')['dir']
+            # DROP THE /MNT
+            save_filepath = os.path.dirname(save_filepath)[4:]  
+            # This is supposedly where calcThreshNorm saves its info, so we can
+            # by default pull norm and STD from here if the provided 
+            # blockMean_path is not found.
+            blockMean_path_tn = os.path.join(save_filepath, 'thresh_norm')
+            if not os.path.exists(blockMean_path_tn):
+                logging.error(f'Block Mean directory not found: {blockMean_path}\nAND thresh_norm directory not found: {blockMean_path_tn}\nPlease run the reference block.')
 
-        updated_mean_dirs = glob(str(Path(blockMean_path, 'updated_means_block(*)')))
+            save_filename = self.r.config_get('dbfilename')['dbfilename']
+            save_filename = os.path.splitext(save_filename)[0][:-4]
+            logging.info(f'Looking for updated means in: {save_filename}')
 
-        if updated_mean_dirs == []:
-            blockMean_path = blockMean_path
-        elif blockMean_load_num == -1:
-            blockMean_path = self.sort_blockmean_dirs(updated_mean_dirs)[-1]
+            # Pathnames should be DIR/DIR/DIR/subjectid_date_blocknumber.yaml
+            updated_mean_dirs = glob(str(Path(blockMean_path_tn, f'{save_filename}_*.yaml')))
+            logging.info(f'Updated mean dirs: {updated_mean_dirs}')
+            list.sort(updated_mean_dirs)
+            blockMean_file = updated_mean_dirs[-1]
+            data = yaml.safe_load(open(blockMean_file, 'r'))
+            blockMean = np.array(data['means']) # len(channels)*2 because the second half of the list contains SBP
+            blockMean[len(blockMean)//2:] /= 20. # calcThreshNorm saves the sum of SBP, so we need to divide by 20 to get the mean
+            blockStd = np.array(data['stds']) # len(channels)*2 because the second half of the list contains SBP
+            blockStd[len(blockStd)//2:] /= np.sqrt(20.) # calcThreshNorm saves the sum of SBP, so we need to divide by sqrt(20) to get the std
+            logging.info(f'Loaded means and stds from: {blockMean_file}')
+
+            blockMean_path = f'/samba/data/{participant}/{session_name}/RawData/GRU_Training_Files/tfdata'
+
         else:
-            blockMean_path = glob(str(Path(blockMean_path, f'updated_means_block({blockMean_load_num})')))[-1]
+            updated_mean_dirs = glob(str(Path(blockMean_path, 'updated_means_block(*)')))
 
-        logging.info(F'Loading blockMean and blockStd from: {blockMean_path}')
-        if os.path.isfile(f'{blockMean_path}/blockMean.npy') and os.path.isfile(f'{blockMean_path}/blockStd.npy'):
-            blockMean = np.load(blockMean_path + "/blockMean.npy")
-            blockStd = np.load(blockMean_path + "/blockStd.npy")
-            logging.info(f'Loaded blockMean and blockStd from: {blockMean_path}')
+            if updated_mean_dirs == []:
+                blockMean_path = blockMean_path
+            elif blockMean_load_num == -1:
+                blockMean_path = self.sort_blockmean_dirs(updated_mean_dirs)[-1]
+            else:
+                blockMean_path = glob(str(Path(blockMean_path, f'updated_means_block({blockMean_load_num})')))[-1]
 
-        elif os.path.isfile(f'{blockMean_path}/rdbToMat_blockMean.npy') and os.path.isfile(f'{blockMean_path}/rdbToMat_blockStd.npy'):
-            blockMean = np.load(blockMean_path + "/rdbToMat_blockMean.npy")
-            blockStd = np.load(blockMean_path + "/rdbToMat_blockStd.npy")
-            logging.info(f'Loaded rdbToMat_blockMean and rdbToMat_blockStd from: {blockMean_path}')
-            
-        else:
-            logging.error(f'Could not find block means on path: {blockMean_path}')
+            logging.info(F'Loading blockMean and blockStd from: {blockMean_path}')
+            if os.path.isfile(f'{blockMean_path}/blockMean.npy') and os.path.isfile(f'{blockMean_path}/blockStd.npy'):
+                blockMean = np.load(blockMean_path + "/blockMean.npy")
+                blockStd = np.load(blockMean_path + "/blockStd.npy")
+                logging.info(f'Loaded blockMean and blockStd from: {blockMean_path}')
+
+            elif os.path.isfile(f'{blockMean_path}/rdbToMat_blockMean.npy') and os.path.isfile(f'{blockMean_path}/rdbToMat_blockStd.npy'):
+                blockMean = np.load(blockMean_path + "/rdbToMat_blockMean.npy")
+                blockStd = np.load(blockMean_path + "/rdbToMat_blockStd.npy")
+                logging.info(f'Loaded rdbToMat_blockMean and rdbToMat_blockStd from: {blockMean_path}')
+                
+            else:
+                logging.error(f'Could not find block means on path: {blockMean_path}')
+
+        # STATS SAVING PARAMS --------------------------------------------------
+        autosaveStats = self.parameters.get("autosaveStats", True)        # whether to save normalization stats to file
+        autosaveStats_path = self.parameters.get("autosaveStats_path", blockMean_path)  # where to save normalization stats to file
+        if autosaveStats_path is None:
+            autosaveStats_path = blockMean_path
 
 
         # --------------------------- load channel mask --------------------------------------------

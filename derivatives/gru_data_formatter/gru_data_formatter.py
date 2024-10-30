@@ -269,7 +269,7 @@ else:
 # ---------------------------------------------------------------------------------------------------------------
 
 # initialzie RNN decoder output stream
-stream = r.xrange('decoder_output_stream_name')
+stream = r.xrange(decoder_output_stream_name)
 
 # if the stream doesn't exist (open loop), make variables blank
 if stream==[]:
