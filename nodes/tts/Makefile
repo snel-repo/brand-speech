@@ -10,7 +10,7 @@ CONDA_ENV_EXISTS := $(shell if [ -d $(shell conda info --base)/envs/brand-speech
 ifeq ($(CONDA_ENV_EXISTS),1)
     CONDA_PREFIX := $(shell conda info --base)/envs/brand-speech-tts
 else
-    CONDA_PREFIX := /home/snel/lib/miniconda3/envs/brand-speech-tts
+    CONDA_PREFIX := /home/envs/brand-speech-tts
 endif
 
 PYTHON_VERSION=3.10 # This works for brand-speech-tts env
