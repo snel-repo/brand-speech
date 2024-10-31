@@ -10,7 +10,7 @@ CONDA_ENV_EXISTS := $(shell if [ -d $(shell conda info --base)/envs/brand-speech
 ifeq ($(CONDA_ENV_EXISTS),1)
     CONDA_PREFIX := $(shell conda info --base)/envs/brand-speech
 else
-    CONDA_PREFIX := /home/envs/brand-speech
+    CONDA_PREFIX := /home/conda_envs_share/brand-speech
 endif
 
 PYTHON_VERSION=3.9 # This works for brand-speech env

@@ -61,7 +61,7 @@ if [[ $kernel_info == *"PREEMPT_RT"* ]]; then
 else
     # update conda environment for GPU systems
     info "Updating brand-speech conda env for GPU-enabled systems"
-    conda env update --file $install_script_dir/environment_glt.yaml --prune
+    conda env update --file $install_script_dir/environment_gpu.yaml --prune
     checkStatus $? "conda update failed"
     info "conda env successfully updated"
 
