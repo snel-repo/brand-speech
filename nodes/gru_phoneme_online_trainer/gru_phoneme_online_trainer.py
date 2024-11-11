@@ -68,6 +68,7 @@ class brainToText_onlineTrainer(BRANDNode):
         self.neural_data_stream = self.parameters.get('neural_data_stream', 'binnedFeatures_20ms')  
         self.use_threshold_crossings = bool(self.parameters.get('use_threshold_crossings', True))
         self.use_spike_band_power = bool(self.parameters.get('use_spike_band_power', True))
+        self.delay_as_sil = bool(self.parameters.get('delay_as_sil', False))
         gpu_number = str(self.parameters.get("gpu_number", "1"))       # GPU for tensorflow to use. -1 means that GPU is hidden and inference will happen on CPU.
         
         self.verbose = bool(self.parameters.get('verbose', False))
@@ -275,7 +276,10 @@ class brainToText_onlineTrainer(BRANDNode):
             for entry_id, entry_dict in stream_entry[0][1]:
                 self.trialInfo_lastEntrySeen = entry_id
 
-                start = np.frombuffer(entry_dict[b'go_cue_redis_time'], dtype=np.uint64)[0]
+                if self.delay_as_sil:
+                    start = np.frombuffer(entry_dict[b'trial_start_redis_time'], dtype=np.uint64)[0]
+                else:
+                    start = np.frombuffer(entry_dict[b'go_cue_redis_time'], dtype=np.uint64)[0]
                 end = np.frombuffer(entry_dict[b'trial_end_redis_time'], dtype=np.uint64)[0]
 
                 cue.append(entry_dict[b'cue'].decode())
@@ -373,7 +377,7 @@ class brainToText_onlineTrainer(BRANDNode):
 
                 # Clean label and get phonemes
                 label = clean_label(label, self.config.task)
-                label_phonemes = get_phonemes(label)
+                label_phonemes = get_phonemes(label, prepend_sil=self.delay_as_sil)
                 if self.verbose:
                     logging.info(f'Cleaned label: {label}')
                     logging.info(f'Phonemes: {label_phonemes}')

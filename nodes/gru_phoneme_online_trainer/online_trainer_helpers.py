@@ -170,7 +170,7 @@ def clean_label(label, task):
         return label
     
 
-def get_phonemes(label):
+def get_phonemes(label, prepend_sil=False):
         g2p = G2p()
 
         # Change 'a' to 'ay' if we are in spelling mode to correct phonemization
@@ -182,6 +182,8 @@ def get_phonemes(label):
         if len(label) == 0:
             phonemes = SIL_DEF
         else:
+            if prepend_sil:
+                phonemes.append('SIL')
             for p in g2p(label):
                 if p==' ':
                     phonemes.append('SIL')
