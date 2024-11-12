@@ -679,6 +679,9 @@ class brainToText_closedLoop(BRANDNode):
             elif (taskState==0 and newTaskState==0):
                 # We are still in the delay state. Go cue hasn't happened yet. Continue to wait until the go cue.
                 taskState = newTaskState
+                if include_delay:
+                    # if we are including the delay period, add the data to the sentence buffer before continuing
+                    sentenceBuffer.append(data_snippet)
                 continue
 
             elif (taskState==0 and newTaskState==1):
