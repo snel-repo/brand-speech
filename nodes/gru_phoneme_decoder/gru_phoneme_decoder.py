@@ -300,6 +300,7 @@ class brainToText_closedLoop(BRANDNode):
         auto_punctuation = self.parameters.get("auto_punctuation", True)
         legacy = self.parameters.get("legacy_mode", True)
         task_state_stream = self.parameters.get("task_state_stream", 'task_state')
+        include_delay = bool(self.parameters.get("include_delay", False))
         sync_key = self.parameters.get("sync_key", 'sync').encode()
         time_key = self.parameters.get("time_key", 'ts').encode()
 
@@ -670,6 +671,9 @@ class brainToText_closedLoop(BRANDNode):
                     logging.info(f'Delay period just started. Old task state = {taskState}, '\
                                 f'New task state = {newTaskState}, decoderState = {decoderState}, forceStop = {forceStop}')
                 taskState = newTaskState
+                if include_delay:
+                    # if we are including the delay period, add the data to the sentence buffer before continuing
+                    sentenceBuffer.append(data_snippet)
                 continue
 
             elif (taskState==0 and newTaskState==0):
