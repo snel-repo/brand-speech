@@ -67,7 +67,7 @@ class auto_punctuator(BRANDNode):
                         for sentence in capitalized.sentences for word in sentence.words]
                     capitalized = [word.capitalize() if word == 'i' else word for word in capitalized]
                     capitalized[0] = capitalized[0].capitalize()
-                    text_for_punctuation = re.sub(" (?=[\.,'!?:;])", "", ' '.join(capitalized))
+                    text_for_punctuation = re.sub(" (?=[\.,'!?:;]|n't)", "", ' '.join(capitalized))
                 punctuated_text = self.punctuation_model.restore_punctuation(text_for_punctuation)
             except:
                 punctuated_text = text_for_punctuation
