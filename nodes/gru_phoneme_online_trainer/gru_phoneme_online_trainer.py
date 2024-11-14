@@ -13,6 +13,7 @@ from tensorflow.python.training import py_checkpoint_reader
 from pathlib import Path
 import pickle
 import time
+from pprint import pformat
 
 from speech_utils.utils.gaussSmooth import gaussSmooth
 
@@ -126,7 +127,12 @@ class brainToText_onlineTrainer(BRANDNode):
             tf.config.experimental.set_memory_growth(gpu, True)
 
         # Load pretrained model
-        self.nsd = load_model(self.config['init_model_dir'], self.config['init_model_ckpt_idx'], gpu_number)
+        self.nsd, model_sessions = load_model(self.config['init_model_dir'], self.config['init_model_ckpt_idx'], gpu_number)
+
+        # ensure the model_sessions list matches the list in the config
+        if model_sessions != self.config['sessions']:
+            logging.error(f'Mismatch between model_sessions and config sessions:\nModel:\n{pformat(model_sessions)}\n\nConfig:\n{pformat(self.config["sessions"])}')
+            sys.exit(1)
 
         # Add input layers if needed
         add_input_layers(self.nsd,
