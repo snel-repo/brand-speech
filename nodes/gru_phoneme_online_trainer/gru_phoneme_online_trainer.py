@@ -52,8 +52,13 @@ class brainToText_onlineTrainer(BRANDNode):
         # CONFIG PATH ----------------------------------------------------------
         self.config_file_path = self.parameters.get("config_file_path", None)
         if self.config_file_path is None:
-            self.config_file_path = f'/samba/data/{participant}/{session_name}/RawData/Models/gru_decoder/online_trainer_config.yaml'
-            logging.warning(f'No config file path provided. Using default: {self.config_file_path}')
+            # get list of models
+            model_list = [str(x) for x in Path(f'/samba/data/{participant}/{session_name}/RawData/Models/gru_decoder').glob(f'rnn_model_*')]
+            if len(model_list) == 0:
+                logging.error(f'No models found at: /samba/data/{participant}/{session_name}/RawData/Models/gru_decoder')
+            model_list.sort()
+            self.config_file_path = os.path.join(model_list[-1], 'online_trainer_config.yaml')
+            logging.warning(f'No config file path provided. Defaulting to: {self.config_file_path}')
         # RNN INIT PATH --------------------------------------------------------
         self.init_model_dir = self.parameters.get("init_model_dir", None)
         if self.init_model_dir is None:
