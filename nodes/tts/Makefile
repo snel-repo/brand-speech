@@ -4,7 +4,7 @@ ROOT ?=../..
 include $(ROOT)/setenv.mk
 
 # manually set path for conda environment
-CONDA_ENV_EXISTS := $(shell if [ -d $(shell conda info --base)/envs/brand-speech ]; then echo 1; else echo 0; fi)
+CONDA_ENV_EXISTS := $(shell if [ -d $(shell conda info --base)/envs/brand-speech-tts ]; then echo 1; else echo 0; fi)
 
 # Set CONDA_PREFIX based on the existence of the conda environment
 ifeq ($(CONDA_ENV_EXISTS),1)
