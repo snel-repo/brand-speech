@@ -89,15 +89,15 @@ else
         fi
     fi
 
-    # info "Installing language model environment"
-    # conda env update --file $install_script_dir/environment_lm.yaml --prune
+    info "Installing language model environment"
+    conda env update --file $install_script_dir/environment_lm.yaml --prune
 fi
 
 # update conda environment
-# info "Updating brand-speech-tts conda env"
-# # conda env update --file $install_script_dir/environment_tts.yaml --prune
-# checkStatus $? "conda update failed"
-# info "conda env successfully updated"
+info "Updating brand-speech-tts conda env"
+conda env update --file $install_script_dir/environment_tts.yaml --prune
+checkStatus $? "conda update failed"
+info "conda env successfully updated"
 
 # download the TTS model
 info "Downloading LJ Speech TTS model"
