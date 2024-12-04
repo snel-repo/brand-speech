@@ -46,6 +46,7 @@ def load_model(init_model_dir, ckpt_idx, gpu_number):
     args['loadDir'] = './'
     args['mode'] = 'infer'
     args['loadCheckpointIdx'] = ckpt_idx
+    model_sessions = args['dataset']['sessions']
     args['dataset']['sessions'] = []  # Do not load any dataset
     args['gpuNumber'] = str(gpu_number)
 
@@ -55,7 +56,7 @@ def load_model(init_model_dir, ckpt_idx, gpu_number):
 
     os.chdir(cwd)
 
-    return nsd
+    return nsd, model_sessions
 
 
 def add_input_layers(model, existing_layers, requested_layers):
@@ -170,7 +171,7 @@ def clean_label(label, task):
         return label
     
 
-def get_phonemes(label):
+def get_phonemes(label, prepend_sil=False):
         g2p = G2p()
 
         # Change 'a' to 'ay' if we are in spelling mode to correct phonemization
@@ -182,6 +183,8 @@ def get_phonemes(label):
         if len(label) == 0:
             phonemes = SIL_DEF
         else:
+            if prepend_sil:
+                phonemes.append('SIL')
             for p in g2p(label):
                 if p==' ':
                     phonemes.append('SIL')

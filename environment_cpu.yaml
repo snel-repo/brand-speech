@@ -28,6 +28,7 @@ dependencies:
   - cuda-version=11.8=h70ddcb2_2
   - cudatoolkit=11.8.0=h4ba93d1_12
   - cudnn=8.8.0.121=h838ba91_3
+  - emoji==2.14.0
   - flatbuffers=2.0.8=hcb278e6_1
   - frozenlist=1.4.0=py39hd1e30aa_1
   - gast=0.4.0=pyh9f0ad1d_0
@@ -106,6 +107,7 @@ dependencies:
   - setuptools=68.0.0=py39h06a4308_0
   - six=1.16.0=pyh6c4a22f_0
   - snappy=1.1.10=h9fff704_0
+  - stanza==1.9.2
   - sqlite=3.41.2=h5eee18b_0
   - tensorboard=2.10.1=pyhd8ed1ab_0
   - tensorboard-data-server=0.6.1=py39hd97740a_4
